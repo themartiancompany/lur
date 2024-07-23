@@ -1,5 +1,5 @@
 ===============
-Fur Authors
+Lur Authors
 ===============
 
 * Pellegrino Prevete <pellegrinoprevete@gmail.com>
