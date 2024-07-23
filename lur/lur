@@ -23,6 +23,8 @@ _requirements() {
 # shellcheck disable=SC2034
 _global_variables() {
   local_packages=()
+  repo_dir=""
+  repo_origin=""
   output_directory=""
   color=""
   quiet=""
@@ -274,6 +276,8 @@ Usage:
     [options]
     [packages]
   options:
+     -o                   Output directory.
+			  Default: $(_get "output" "directory")
      -c                   Colors.
      -h                   This message.
      -v                   Enable verbose output
@@ -289,10 +293,11 @@ ENDUSAGETEXT
 _show_config() {
   _msg_info "${app_name} configuration"
   _msg_info "           Packaging date:   $(_get "packaging" "date")"
+  _msg_info "              Repo origin:   $(_get "repo" "directory")"
+  _msg_info "           Repo directory:   $(_get "repo" "origin")"
   _msg_info "                 Packages:   $(_get "local" "packages")"
   _msg_info "         Output directory:   $(_get "out" "directory")"
 }
-
 
 _globals
 _global_variables
@@ -333,7 +338,7 @@ installed_packages=(
   $@
 )
 _config_user_init \
-  "fur"
+  "lur"
 _lur \
   "${installed_packages[@]}"
 #!/usr/bin/env bash
