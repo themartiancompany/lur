@@ -23,6 +23,7 @@ _requirements() {
 # shellcheck disable=SC2034
 _global_variables() {
   local_packages=()
+  output_directory=""
   color=""
   quiet=""
 }
@@ -284,6 +285,15 @@ ENDUSAGETEXT
     "${1}"
 }
 
+# Shows configuration options.
+_show_config() {
+  _msg_info "${app_name} configuration"
+  _msg_info "           Packaging date:   $(_get "packaging" "date")"
+  _msg_info "                 Packages:   $(_get "local" "packages")"
+  _msg_info "         Output directory:   $(_get "out" "directory")"
+}
+
+
 _globals
 _global_variables
 _requirements
@@ -324,19 +334,19 @@ installed_packages=(
 )
 _config_user_init \
   "fur"
-_fur \
+_lur \
   "${installed_packages[@]}"
 #!/usr/bin/env bash
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
-
-unset mode
-
-mode="${1}"
-packages_file="${2}"
-server="${3}"
-
-_build_repo \
-  "${mode}" \
-  "${packages_file}" \
-  "${server}"
+# 
+# unset mode
+# 
+# mode="${1}"
+# packages_file="${2}"
+# server="${3}"
+# 
+# _build_repo \
+#   "${mode}" \
+#   "${packages_file}" \
+#   "${server}"
