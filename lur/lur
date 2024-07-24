@@ -310,6 +310,7 @@ while \
     arg; do
   case \
     "${arg}" in
+    o) override_output_directory="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
     h|?) _set_overrides && \
@@ -339,6 +340,7 @@ installed_packages=(
 )
 _config_user_init \
   "lur"
+_show_config
 _lur \
   "${installed_packages[@]}"
 #!/usr/bin/env bash
