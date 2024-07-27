@@ -23,7 +23,7 @@ _requirements() {
 # shellcheck disable=SC2034
 _global_variables() {
   local_packages=()
-  repo_dir=""
+  repo_directory=""
   repo_origin=""
   output_directory=""
   color=""
@@ -276,6 +276,10 @@ Usage:
     [options]
     [packages]
   options:
+     -d                   Repo directory.
+			  Default: $(_get "repo" "dir")
+     -p                   Repo origin.
+			  Default: $(_get "repo" "dir")
      -o                   Output directory.
 			  Default: $(_get "output" "directory")
      -c                   Colors.
@@ -306,10 +310,12 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    'cvh?' \
+    'd:p:o:cvh?' \
     arg; do
   case \
     "${arg}" in
+    d) override_repo_directory="${OPTARG}" ;;
+    p) override_repo_origin="${OPTARG}" ;;
     o) override_output_directory="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
