@@ -260,6 +260,10 @@ _set_overrides() {
     "repo" \
     "origin" \
     "ur"
+   _set_override \
+    "output" \
+    "dir" \
+    "$(pwd)"
 if [[ -v override_color ]]; then
     color="${override_color}"
   elif [[ -z "${color}" ]]; then
