@@ -24,9 +24,9 @@ _requirements() {
 _global_variables() {
   packaging_date=()
   local_packages=()
-  repo_directory=""
+  repo_dir=""
   repo_origin=""
-  output_directory=""
+  output_dir=""
   color=""
   quiet=""
 }
@@ -252,8 +252,15 @@ _set_overrides() {
     "packaging" \
     "date" \
     "$(_get_date_human)"
- 
-  if [[ -v override_color ]]; then
+   _set_override \
+    "repo" \
+    "origin" \
+    "${HOME}/lur"
+   _set_override \
+    "repo" \
+    "origir" \
+    "ur"
+if [[ -v override_color ]]; then
     color="${override_color}"
   elif [[ -z "${color}" ]]; then
     color="n"
@@ -285,9 +292,9 @@ Usage:
      -d                   Repo directory.
 			  Default: $(_get "repo" "dir")
      -p                   Repo origin.
-			  Default: $(_get "repo" "dir")
+			  Default: $(_get "repo" "origin")
      -o                   Output directory.
-			  Default: $(_get "output" "directory")
+			  Default: $(_get "output" "dir")
      -c                   Colors.
      -h                   This message.
      -v                   Enable verbose output
@@ -303,10 +310,10 @@ ENDUSAGETEXT
 _show_config() {
   _msg_info "${app_name} configuration"
   _msg_info "           Packaging date:   $(_get "packaging" "date")"
-  _msg_info "              Repo origin:   $(_get "repo" "directory")"
+  _msg_info "              Repo origin:   $(_get "repo" "dir")"
   _msg_info "           Repo directory:   $(_get "repo" "origin")"
   _msg_info "                 Packages:   $(_get "local" "packages")"
-  _msg_info "         Output directory:   $(_get "out" "directory")"
+  _msg_info "         Output directory:   $(_get "out" "dir")"
 }
 
 _globals
@@ -320,9 +327,9 @@ while \
     arg; do
   case \
     "${arg}" in
-    d) override_repo_directory="${OPTARG}" ;;
+    d) override_repo_dir="${OPTARG}" ;;
     p) override_repo_origin="${OPTARG}" ;;
-    o) override_output_directory="${OPTARG}" ;;
+    o) override_output_dir="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
     h|?) _set_overrides && \
