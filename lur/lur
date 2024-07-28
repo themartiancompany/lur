@@ -22,6 +22,7 @@ _requirements() {
 
 # shellcheck disable=SC2034
 _global_variables() {
+  packaging_date=()
   local_packages=()
   repo_dir=""
   repo_origin=""
@@ -247,6 +248,11 @@ _lur() {
 # Set defaults and, if present, overrides
 # from arch-grub command line option parameters
 _set_overrides() {
+  _set_override \
+    "packaging" \
+    "date" \
+    "$(_get_date_human)"
+ 
   if [[ -v override_color ]]; then
     color="${override_color}"
   elif [[ -z "${color}" ]]; then
