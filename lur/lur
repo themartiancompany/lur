@@ -313,7 +313,7 @@ _show_config() {
   _msg_info "              Repo origin:   $(_get "repo" "dir")"
   _msg_info "           Repo directory:   $(_get "repo" "origin")"
   _msg_info "                 Packages:   $(_get "local" "packages")"
-  _msg_info "         Output directory:   $(_get "out" "dir")"
+  _msg_info "         Output directory:   $(_get "output" "dir")"
 }
 
 _globals
