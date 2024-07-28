@@ -258,7 +258,7 @@ _set_overrides() {
     "${HOME}/lur"
    _set_override \
     "repo" \
-    "origir" \
+    "origin" \
     "ur"
 if [[ -v override_color ]]; then
     color="${override_color}"
@@ -349,19 +349,18 @@ shift \
   $(( \
     OPTIND - 1 \
   ))
-
 (( $# < 1 )) && \
   _usage \
     1
- 
-installed_packages=(
+local_packages=(
   $@
 )
 _config_user_init \
   "lur"
+_set_overrides
 _show_config
 _lur \
-  "${installed_packages[@]}"
+  "${local_packages[@]}"
 #!/usr/bin/env bash
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
