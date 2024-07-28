@@ -155,17 +155,16 @@ _build_repo() {
 # $@: packages
 _lur() {
   local \
+    _output_dir="${1}" \
+    _origin="${2}" \
     _packages=() \
     _pkgs=() \
     _pacman_opts=() \
-    _git_opts=() \
-    _http \
-    _ns \
-    _pkg \
-    _url
-  _http="https://github.com"
-  _ns="themartiancompany"
-  _url="${_http}/${_ns}/fur"
+    _aspe_opts=() \
+    _opts=() \
+    _pkg
+  shift \
+    2
   _packages=(
     "$@"
   )
@@ -175,9 +174,9 @@ _lur() {
     -U
     --noconfirm
   )
-  _git_opts=(
-    --single-branch
-    --depth=1
+  _aspe_opts=(
+    -p
+      "${_origin}"
   )
   for _pkg \
     in "${_packages[@]}"; do
@@ -185,15 +184,13 @@ _lur() {
       mktemp \
         -d)"
     _opts=(
-      "${_git_opts[@]}"
-      --branch="${_pkg}"
+      "${_aspe_opts[@]}"
     )
     cd \
       "${_repo}"
-    git \
-      clone \
+    aspe \
         "${_opts[@]}" \
-        "${_url}"
+        "${_pkg}"
     _pkgs=(
       $( \
         find \
@@ -364,18 +361,8 @@ _config_user_init \
 _set_overrides
 _show_config
 _lur \
+  "${output_dir}" \
+  "${repo_dir}" \
+  "${repo_origin}" \
   "${local_packages[@]}"
-#!/usr/bin/env bash
-#
-# SPDX-License-Identifier: AGPL-3.0-or-later
-# 
-# unset mode
-# 
-# mode="${1}"
-# packages_file="${2}"
-# server="${3}"
-# 
-# _build_repo \
-#   "${mode}" \
-#   "${packages_file}" \
-#   "${server}"
+

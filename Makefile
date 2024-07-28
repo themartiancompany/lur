@@ -27,4 +27,4 @@ install-lur:
 	install -vdm 755 "$(BIN_DIR)"
 	install -vDm 755 lur/lur "$(BIN_DIR)"
 
-.PHONY: check install install-doc install-fur shellcheck
+.PHONY: check install install-doc install-lur shellcheck
