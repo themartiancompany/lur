@@ -192,88 +192,88 @@ _lur() {
         mv \
           "${_pkgs[@]}" \
           "${_output_dir}"
-	fi
       elif [[ "${_pkgs[*]}" == "" ]]; then
         _msg_info \
           "not found anything in"
+        _msg_info \
+          "packaging ${_packages[*]}"
+        _pacman_opts+=(
+          -U
+          --noconfirm
+        )
+        _aspe_opts=(
+          -p
+            "${_origin}"
+        )
+        for _pkg \
+          in "${_packages[@]}"; do
+          _repo="$( \
+            mktemp \
+              -d)"
+          _opts=(
+            "${_aspe_opts[@]}"
+          )
+          cd \
+            "${_repo}"
+          aspe \
+              "${_opts[@]}" \
+              "${_pkg}"
+          _pkgs=(
+            $( \
+              find \
+                . \
+                -iname \
+                  '*.pkg.*' \
+                -exec echo ${_repo}/{} ';')
+          )
+          if [[ "${_pkgs[*]}" != "" ]]; then
+            _msg_info \
+              "found packages ${_pkgs[*]}"
+          elif [[ "${_pkgs[*]}" == "" ]]; then
+            _msg_info \
+              "packaging ${_pkg}"
+          fi
+          _sigs=(
+            $( \
+              find \
+                . \
+                -iname \
+                  '*.sig' \
+                -exec echo ${_repo}/{} ';')
+          )
+          _msg_info \
+            "removing signatures ${_sigs[*]}"
+          mv \
+            "${_sigs[@]}" \
+            .
+          rm \
+            *".sig"
+          _pkgs=(
+            $( \
+              find \
+                . | \
+                grep \
+                  "pkg")
+          )
+          _msg_info \
+            "moving ${_pkgs[*]}"
+          mv \
+            "${_pkgs[@]}" \
+            .
+          _pkgs=(
+            $(ls \
+                *".pkg."*)
+          )
+          _msg_info \
+            "installing ${_pkgs[*]}"
+          pacman \
+            "${_pacman_opts[@]}" \
+            "${_pkgs[@]}"
+
+        done
       fi
     done
   fi
-  _msg_info \
-    "packaging ${_packages[*]}"
-  _pacman_opts+=(
-    -U
-    --noconfirm
-  )
-  _aspe_opts=(
-    -p
-      "${_origin}"
-  )
-  for _pkg \
-    in "${_packages[@]}"; do
-    _repo="$( \
-      mktemp \
-        -d)"
-    _opts=(
-      "${_aspe_opts[@]}"
-    )
-    cd \
-      "${_repo}"
-    aspe \
-        "${_opts[@]}" \
-        "${_pkg}"
-    _pkgs=(
-      $( \
-        find \
-          . \
-          -iname \
-	    '*.pkg.*' \
-	  -exec echo ${_repo}/{} ';')
-    )
-    if [[ "${_pkgs[*]}" != "" ]]; then
-      _msg_info \
-        "found packages ${_pkgs[*]}"
-    elif [[ "${_pkgs[*]}" == "" ]]; then
-      _msg_info \
-        "packaging ${_pkg}"
-    fi
-    _sigs=(
-      $( \
-        find \
-          . \
-          -iname \
-	    '*.sig' \
-	  -exec echo ${_repo}/{} ';')
-    )
-    _msg_info \
-      "removing signatures ${_sigs[*]}"
-    mv \
-      "${_sigs[@]}" \
-      .
-    rm \
-      *".sig"
-    _pkgs=(
-      $( \
-        find \
-          . | \
-	  grep \
-	    "pkg")
-    )
-    _msg_info \
-      "moving ${_pkgs[*]}"
-    mv \
-      "${_pkgs[@]}" \
-      .
-    _pkgs=(
-      $(ls \
-	  *".pkg."*)
-    )
-    _msg_info \
-      "installing ${_pkgs[*]}"
-    pacman \
-      "${_pacman_opts[@]}" \
-      "${_pkgs[@]}"
-  done
   cd \
     "${OLDPWD}"
 }
