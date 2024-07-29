@@ -167,6 +167,7 @@ _lur() {
     _pacman_opts=() \
     _aspe_opts=() \
     _opts=() \
+    _msg=() \
     _pkg
   shift \
     4
@@ -178,6 +179,8 @@ _lur() {
       "${_repo_dir}"
     for _pkg \
       in "${_packages[@]}"; do
+      _msg_info \
+        "no build selected, looking for ${_pkg}"
       _pkgs=(
         $( \
           find \
@@ -196,44 +199,44 @@ _lur() {
           "${_output_dir}"
       elif [[ "${_pkgs[*]}" == "" ]]; then
         _msg_info \
-          "not found anything in"
+          "not found ${_pkg} packages in lur repo '${_repo_dir}'"
         _msg_info \
-          "packaging ${_packages[*]}"
-        _pacman_opts+=(
-          -U
-          --noconfirm
-        )
+          "packaging ${_pkg}"
         _aspe_opts=(
           -p
             "${_origin}"
         )
-        for _pkg \
-          in "${_packages[@]}"; do
-          _repo="$( \
-            mktemp \
-              -d)"
-          _opts=(
-            "${_aspe_opts[@]}"
+        _repo="$( \
+          mktemp \
+            -d)"
+        _opts=(
+          "${_aspe_opts[@]}"
+        )
+        cd \
+          "${_repo}"
+        aspe \
+          "${_opts[@]}" \
+          "${_pkg}"
+        _pkgs=(
+          $(find \
+              . \
+              -iname \
+                '*.pkg.*' \
+              -exec \
+	        echo \
+		  ${_repo}/{} ';')
+        )
+        if [[ "${_pkgs[*]}" != "" ]]; then
+          _msg_info \
+            "found packages ${_pkgs[*]}"
+        elif [[ "${_pkgs[*]}" == "" ]]; then
+	  _msg=(
+            "Package ${_pkg}: error running"
+	    "reallymakepkg probably."
           )
-          cd \
-            "${_repo}"
-          aspe \
-              "${_opts[@]}" \
-              "${_pkg}"
-          _pkgs=(
-            $( \
-              find \
-                . \
-                -iname \
-                  '*.pkg.*' \
-                -exec echo ${_repo}/{} ';')
-          )
-          if [[ "${_pkgs[*]}" != "" ]]; then
-            _msg_info \
-              "found packages ${_pkgs[*]}"
-          elif [[ "${_pkgs[*]}" == "" ]]; then
-            _msg_info \
-              "packaging ${_pkg}"
+          _msg_error \
+            "${_msg[*]}" \
+	    1
           fi
           _sigs=(
             $( \
