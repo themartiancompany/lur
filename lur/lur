@@ -330,12 +330,14 @@ Usage:
     [options]
     [packages]
   options:
-     -d                   Repo directory.
+     -d <repo_dir>        Repo directory.
 			  Default: $(_get "repo" "dir")
-     -p                   Repo origin.
+     -p <origin>          Repo origin.
 			  Default: $(_get "repo" "origin")
-     -o                   Output directory.
+     -o <output_dir>      Output directory.
 			  Default: $(_get "output" "dir")
+     -n                   No build.
+			  Default: $(_get "no" "build")
      -c                   Colors.
      -h                   This message.
      -v                   Enable verbose output
