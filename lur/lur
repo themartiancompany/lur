@@ -26,6 +26,7 @@ _global_variables() {
   local_packages=()
   repo_dir=""
   repo_origin=""
+  no_build=""
   output_dir=""
   color=""
   quiet=""
@@ -156,7 +157,9 @@ _build_repo() {
 _lur() {
   local \
     _output_dir="${1}" \
-    _origin="${2}" \
+    _repo_dir="${2}" \
+    _origin="${3}" \
+    _no_build="${4}" \
     _packages=() \
     _pkgs=() \
     _pacman_opts=() \
@@ -164,12 +167,40 @@ _lur() {
     _opts=() \
     _pkg
   shift \
-    2
+    4
   _packages=(
     "$@"
   )
+  if [[ "${_no_build}" == "true" ]]; then
+    cd \
+      "${_repo_dir}"
+    for _pkg \
+      in "${_packages[@]}"; do
+      _pkgs=(
+        $( \
+          find \
+            . \
+            -iname \
+              "${_pkg}*.pkg.*" \
+            -exec echo ${_repo_dir}/{} ';')
+      )
+      if [[ "${_pkgs[*]}" != "" ]]; then
+        _msg_info \
+          "found packages ${_pkgs[*]}"
+        _msg_info \
+          "moving packages to ${_output_dir}"
+        mv \
+          "${_pkgs[@]}" \
+          "${_output_dir}"
+	fi
+      elif [[ "${_pkgs[*]}" == "" ]]; then
+        _msg_info \
+          "not found anything in"
+      fi
+    done
+  fi
   _msg_info \
-    "installing ${_packages[*]}"
+    "packaging ${_packages[*]}"
   _pacman_opts+=(
     -U
     --noconfirm
@@ -199,8 +230,13 @@ _lur() {
 	    '*.pkg.*' \
 	  -exec echo ${_repo}/{} ';')
     )
-    _msg_info \
-      "found ${_pkgs[*]}"
+    if [[ "${_pkgs[*]}" != "" ]]; then
+      _msg_info \
+        "found packages ${_pkgs[*]}"
+    elif [[ "${_pkgs[*]}" == "" ]]; then
+      _msg_info \
+        "packaging ${_pkg}"
+    fi
     _sigs=(
       $( \
         find \
@@ -251,12 +287,16 @@ _set_overrides() {
     "$(_get_date_human)"
    _set_override \
     "repo" \
-    "origin" \
+    "dir" \
     "${HOME}/lur"
    _set_override \
     "repo" \
     "origin" \
     "ur"
+   _set_override \
+    "no" \
+    "build" \
+    "false"
    _set_override \
     "output" \
     "dir" \
@@ -311,8 +351,9 @@ ENDUSAGETEXT
 _show_config() {
   _msg_info "${app_name} configuration"
   _msg_info "           Packaging date:   $(_get "packaging" "date")"
-  _msg_info "              Repo origin:   $(_get "repo" "dir")"
-  _msg_info "           Repo directory:   $(_get "repo" "origin")"
+  _msg_info "              Repo origin:   $(_get "repo" "origin")"
+  _msg_info "           Repo directory:   $(_get "repo" "dir")"
+  _msg_info "                 No build:   $(_get "no" "build")"
   _msg_info "                 Packages:   $(_get "local" "packages")"
   _msg_info "         Output directory:   $(_get "output" "dir")"
 }
@@ -324,13 +365,14 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    'd:p:o:cvh?' \
+    'd:p:o:ncvh?' \
     arg; do
   case \
     "${arg}" in
     d) override_repo_dir="${OPTARG}" ;;
     p) override_repo_origin="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
+    n) override_no_build="true" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
     h|?) _set_overrides && \
@@ -360,9 +402,12 @@ _config_user_init \
   "lur"
 _set_overrides
 _show_config
-_lur \
-  "${output_dir}" \
-  "${repo_dir}" \
-  "${repo_origin}" \
+app_opts=(
+  "${output_dir}"
+  "${repo_dir}"
+  "${repo_origin}"
+  "${no_build}"
   "${local_packages[@]}"
-
+)
+_lur \
+  "${app_opts[@]}"
