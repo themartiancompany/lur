@@ -18,6 +18,8 @@ source \
 _requirements() {
   _check_cmd \
     'git'
+  _check_cmd \
+    'rsync'
 }
 
 # shellcheck disable=SC2034
@@ -186,10 +188,10 @@ _lur() {
       )
       if [[ "${_pkgs[*]}" != "" ]]; then
         _msg_info \
-          "found packages ${_pkgs[*]}"
+          "No build preferred: found packages ${_pkgs[*]}"
         _msg_info \
-          "moving packages to ${_output_dir}"
-        mv \
+          "copying packages to ${_output_dir}"
+        rsync \
           "${_pkgs[@]}" \
           "${_output_dir}"
       elif [[ "${_pkgs[*]}" == "" ]]; then
