@@ -285,15 +285,15 @@ _set_overrides() {
     "packaging" \
     "date" \
     "$(_get_date_human)"
-   _set_override \
+  _set_override \
     "repo" \
     "dir" \
     "${HOME}/lur"
-   _set_override \
+  _set_override \
     "repo" \
     "origin" \
     "ur"
-   _set_override \
+  _set_override \
     "no" \
     "build" \
     "false"
