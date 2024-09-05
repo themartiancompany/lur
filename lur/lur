@@ -237,45 +237,43 @@ _lur() {
           _msg_error \
             "${_msg[*]}" \
 	    1
-          fi
-          _sigs=(
-            $( \
-              find \
-                . \
-                -iname \
-                  '*.sig' \
-                -exec echo ${_repo}/{} ';')
-          )
-          _msg_info \
-            "removing signatures ${_sigs[*]}"
-          mv \
-            "${_sigs[@]}" \
-            .
-          rm \
-            *".sig"
-          _pkgs=(
-            $( \
-              find \
-                . | \
-                grep \
-                  "pkg")
-          )
-          _msg_info \
-            "moving ${_pkgs[*]}"
-          mv \
-            "${_pkgs[@]}" \
-            .
-          _pkgs=(
-            $(ls \
-                *".pkg."*)
-          )
-          _msg_info \
-            "installing ${_pkgs[*]}"
-          pacman \
-            "${_pacman_opts[@]}" \
-            "${_pkgs[@]}"
-
-        done
+        fi
+        _sigs=(
+          $( \
+            find \
+              . \
+              -iname \
+                '*.sig' \
+              -exec echo ${_repo}/{} ';')
+        )
+        _msg_info \
+          "removing signatures ${_sigs[*]}"
+        mv \
+          "${_sigs[@]}" \
+          .
+        rm \
+          *".sig"
+        _pkgs=(
+          $( \
+            find \
+              . | \
+              grep \
+                "pkg")
+        )
+        _msg_info \
+          "moving ${_pkgs[*]}"
+        mv \
+          "${_pkgs[@]}" \
+          .
+        _pkgs=(
+          $(ls \
+              *".pkg."*)
+        )
+        _msg_info \
+          "installing ${_pkgs[*]}"
+        pacman \
+          "${_pacman_opts[@]}" \
+          "${_pkgs[@]}"
       fi
     done
   fi
