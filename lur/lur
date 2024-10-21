@@ -265,14 +265,17 @@ _nobuild() {
     in "${_packages[@]}"; do
     _msg_info \
       "no build selected, looking for ${_pkg}"
+    _msg_info \
+      "current directory $(pwd)"
     _pkgs=( $( \
       find \
-        . \
+        "$(pwd)" \
         -iname \
           "${_pkg}*.pkg.*" \
         -exec \
 	  echo \
-	    ${_repo_dir}/{} ';')
+	    '{}' ';' || \
+        true)
     )
     if [[ "${_pkgs[*]}" != "" ]]; then
       _msg_info \
