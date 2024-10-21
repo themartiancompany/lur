@@ -24,7 +24,7 @@ _requirements() {
 
 # shellcheck disable=SC2034
 _global_variables() {
-  packaging_date=()
+  packaging_date=""
   local_packages=()
   repo_dir=""
   repo_origin=""
@@ -36,13 +36,25 @@ _global_variables() {
   quiet=""
 }
 
-_aspe() {
+_source_retrieve() {
   local \
     _pkgname="${1}" \
-    _source="${2}"
+    _source="${2}" \
+    _repo="${3}" \
+    _aspe_opts=()
+  if [[ "${quiet}" == "n" ]]; then
+    _aspe_opts+=(
+      -v
+    )
+  fi
+  _aspe_opts+=(
+    -p
+      "${_source}"
+    -o
+      "${_repo}"
+  )
   aspe \
-    -p \
-      "${_source}" \
+    "${_aspe_opts[@]}" \
     "${_pkgname}"
 }
 
@@ -54,9 +66,10 @@ _makepkg() {
     _work_dir="${4}" \
     _reallymakepkg_opts=() \
     _key \
-    _awk_pgpkeys_cmd='/validpgpkeys=/{flag=1;next}/\)/{flag=0}flag' \
-    _validpgpkeys \
-    _oldpwd
+    _gpg_keys \
+    _oldpwd \
+    _pkg_files=()
+    # _awk_pgpkeys_cmd='/validpgpkeys=/{flag=1;next}/\)/{flag=0}flag' \
   _oldpwd="$( \
     pwd)"
   if [[ "${quiet}" == "n" ]]; then
@@ -64,33 +77,62 @@ _makepkg() {
       -v
     )
   fi
-  if [[ ! -d "${_repo}" ]];
+  if [[ "${_work_dir}" != "" ]]; then
+    _reallymakepkg_opts+=(
+      -w
+        "${work_dir}"
+    )
+  fi
+  if [[ ! -d "${_repo}" ]]; then
     _msg_info \
       "lur repo '${_repo}' not found, creating"
     mkdir \
       -p \
       "${_repo}"
   fi
-  if [[ ! -d "${_repo}/${_pkgname}" ]];
+  if [[ ! -d "${_repo}/${_pkgname}" ]]; then
     _msg_info \
       "package '${_pkgname}' not found, retrieving"
-    cd \
+    _source_retrieve \
+      "${_pkgname}" \
+      "${_source}" \
       "${_repo}"
-    _aspe \
-      "${_pkgname}"
-      "${_source}"
+  elif [[ ! -e "${_repo}/${_pkgname}/PKGBUILD" ]]; then
+    _msg=(
+      "directory not empty but PKGBUILD missing;"
+      "check source"
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
   fi
   cd \
-    "${_pkgname}"
-  source \
-    'PKGBUILD'
-  gpg \
-    --recv-keys \
-    "${validpgpkeys[@]}"
+    "${_repo}/${_pkgname}"
+  _gpg_keys=( $( \
+    recipe-get \
+      "${_repo}/${_pkgname}/PKGBUILD" \
+      "validpgpkeys")
+  )
+  for _key \
+    in "${_gpg_keys[@]}"; do
+    gpg \
+      --recv-keys \
+      "${validpgpkeys[@]}"
+  done
   reallymakepkg \
     "${_reallymakepkg_opts[@]}"
+  _msg_info \
+    "current directory: $(pwd)"
+  ls \
+    .
+  _pkg_files=( $( \
+    ls \
+      ./*".pkg.tar."*)
+  )
+  _msg_info \
+    "moving packages '${_pkg_files[*]}' to '${_server}'"
   mv \
-    "${_pkgname}"*".pkg.tar."* \
+    "${_pkg_files[*]}" \
     "${_server}"
 }
 
@@ -112,7 +154,7 @@ _build_pkg() {
       "${_pkgname}" \
       "${_repo}" \
       "${_origin}" \
-      "${_server}"
+      "${_server}" \
       "${_work_dir}/${_pkgname}"
   elif [ "${_mode}" = "fakepkg" ]; then
     cd \
@@ -124,12 +166,11 @@ _build_pkg() {
   cd \
     "${_server}" || \
     exit
-  repo-add \
-    "${_profile}.db.tar.gz" \
-    "${_pkgname}"*".pkg.tar."*
+  # repo-add \
+  #   "${_profile}.db.tar.gz" \
+  #   "${_pkgname}"*".pkg.tar."*
   cd \
-    "${_pwd}" || \
-    exit
+    "${_oldpwd}"
 }
 
 _server_setup() {
@@ -172,8 +213,7 @@ _build_repo() {
     _server="${4}" \
     _work_dir="${5}" \
     _packages=() \
-    _work_dir
-    _profile \
+    _work_dir \
     _oldpwd \
     _pkg
   shift \
@@ -181,17 +221,8 @@ _build_repo() {
   _packages=(
     "$@"
   )
-  # for _pkg \
-  #   in "${_packages[@]}"; do
-  #   _build_pkg \
-  #     "${_pkg}"
-  #   ls
-  # done
   _oldpwd=$( \
     pwd)
-  # _profile=$( \
-  #   basename \
-  #     "$(pwd)")
   # shellcheck source=./packages.extra
   # shellcheck disable=SC1091
   # source \
@@ -212,7 +243,7 @@ _build_repo() {
   #   "${_server}"
   # shellcheck disable=SC2154
   _msg_info \
-    "building ${_packages[*]}"
+    "building repo for packages '${_packages[*]}'"
   for _pkg \
     in "${_packages[@]}"; do
     _build_pkg \
@@ -394,6 +425,10 @@ _set_overrides() {
     "no" \
     "build" \
     "false"
+  _set_override \
+    "build" \
+    "mode" \
+    "src"
    _set_override \
     "output" \
     "dir" \
@@ -458,8 +493,8 @@ _show_config() {
   _msg_info "           Work directory:   $(_get "work" "dir")"
   _msg_info "                 No build:   $(_get "no" "build")"
   _msg_info "               Build mode:   $(_get "build" "mode")"
-  _msg_info "                 Packages:   $(_get "local" "packages")"
   _msg_info "         Output directory:   $(_get "output" "dir")"
+  _msg_info "                 Packages:   ${local_packages}"
 }
 
 _globals
@@ -501,7 +536,7 @@ shift \
 (( $# < 1 )) && \
   _usage \
     1
-local_packages=(
+local_packages+=(
   $@
 )
 _config_user_init \
