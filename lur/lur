@@ -29,6 +29,8 @@ _global_variables() {
   repo_dir=""
   repo_origin=""
   no_build=""
+  build_mode=""
+  work_dir=""
   output_dir=""
   color=""
   quiet=""
@@ -40,31 +42,53 @@ _aspe() {
     _source="${2}"
   aspe \
     -p \
-    "${_source}" \
+      "${_source}" \
     "${_pkgname}"
 }
 
 _makepkg() {
   local \
     _pkgname="${1}" \
-    _source="${2}" \
-    _user="${3}"
-  local \
+    _repo="${2}" \
+    _source="${3}" \
+    _work_dir="${4}" \
+    _reallymakepkg_opts=() \
     _key \
     _awk_pgpkeys_cmd='/validpgpkeys=/{flag=1;next}/\)/{flag=0}flag' \
-    _validpgpkeys
-  _aspe \
-    "${_pkgname}"
-    "${_source}"
+    _validpgpkeys \
+    _oldpwd
+  _oldpwd="$( \
+    pwd)"
+  if [[ "${quiet}" == "n" ]]; then
+    _reallymakepkg_opts+=(
+      -v
+    )
+  fi
+  if [[ ! -d "${_repo}" ]];
+    _msg_info \
+      "lur repo '${_repo}' not found, creating"
+    mkdir \
+      -p \
+      "${_repo}"
+  fi
+  if [[ ! -d "${_repo}/${_pkgname}" ]];
+    _msg_info \
+      "package '${_pkgname}' not found, retrieving"
+    cd \
+      "${_repo}"
+    _aspe \
+      "${_pkgname}"
+      "${_source}"
+  fi
   cd \
-    "${_pkgname}" || \
-    exit
+    "${_pkgname}"
   source \
     'PKGBUILD'
   gpg \
     --recv-keys \
     "${validpgpkeys[@]}"
-  reallymakepkg
+  reallymakepkg \
+    "${_reallymakepkg_opts[@]}"
   mv \
     "${_pkgname}"*".pkg.tar."* \
     "${_server}"
@@ -74,18 +98,26 @@ _build_pkg() {
   local \
     _pkgname="${1}" \
     _mode="${2}"  \
-    _server="${3}" \
+    _origin="${3}" \
+    _repo="${4}" \
+    _server="${5}" \
+    _work_dir="${6}" \
     _pwd
-  _pwd="$(pwd)"
+  _oldpwd="$( \
+    pwd)"
   echo \
     "building ${_pkgname}"
   if [ "${_mode}" = "src" ]; then
     _makepkg \
-      "${_pkgname}"
+      "${_pkgname}" \
+      "${_repo}" \
+      "${_origin}" \
+      "${_server}"
+      "${_work_dir}/${_pkgname}"
   elif [ "${_mode}" = "fakepkg" ]; then
     cd \
       "${_server}" || \
-    exit
+      exit
     fakepkg \
       "${_pkgname}"
   fi
@@ -100,59 +132,206 @@ _build_pkg() {
     exit
 }
 
-_build_repo() {
+_server_setup() {
   local \
-    _mode="${1}" \
-    _packages="${2}" \
-    _server="${3}" \
-    _profile \
-    _pwd
-  _pwd=$(pwd)
-  _profile=$( \
-    basename \
-      "$(pwd)")
-  # shellcheck source=./packages.extra
-  # shellcheck disable=SC1091
-  source \
-    "${_pwd}/${_packages}"
-  [[ "${_server}" == "" ]] && \
-    _server="/tmp/ur/${_profile}"
-  rm \
-    -rf \
-      repo \
+    _server="${1}" \
+    _user \
+    _group
+  if [[ ! -d "${_server}" ]]; then
+    _msg=(
+      "server '${_server}' does not exist," \
+      "creating"
+    )
+    _msg_info \
+      "${_msg[*]}"
+    mkdir \
+      -p \
       "${_server}"
-  mkdir \
-    -p \
-      repo \
-      "${_server}"
+  fi
+  _user="$( \
+    id \
+      -un)"
+  _group="$( \
+    id \
+      -gn)"
+  _msg_info \
+    "set permissions"
   chown \
-    "$( \
-      id \
-        -u):$( \
-	  id \
-	    -g)" \
+    "${_user}:${_group}" \
     "${_server}"
   chmod \
     700 \
     "${_server}" 
-  cd \
-    repo || \
-    exit
+}
+
+_build_repo() {
+  local \
+    _mode="${1}" \
+    _repo="${2}" \
+    _origin="${3}" \
+    _server="${4}" \
+    _work_dir="${5}" \
+    _packages=() \
+    _work_dir
+    _profile \
+    _oldpwd \
+    _pkg
+  shift \
+    5
+  _packages=(
+    "$@"
+  )
+  # for _pkg \
+  #   in "${_packages[@]}"; do
+  #   _build_pkg \
+  #     "${_pkg}"
+  #   ls
+  # done
+  _oldpwd=$( \
+    pwd)
+  # _profile=$( \
+  #   basename \
+  #     "$(pwd)")
+  # shellcheck source=./packages.extra
+  # shellcheck disable=SC1091
+  # source \
+  #   "${_pwd}/${_packages}"
+  if [[ "${_server}" == "" ]]; then
+    _server="$( \
+      mktemp \
+        -d)"
+  fi
+  if [[ "${_work_dir}" == "" ]]; then
+    _work_dir="$( \
+      mktemp \
+        -d)"
+  fi
+  _server_setup \
+    "${_server}"
+  # cd \
+  #   "${_server}"
   # shellcheck disable=SC2154
-  echo \
+  _msg_info \
     "building ${_packages[*]}"
   for _pkg \
     in "${_packages[@]}"; do
     _build_pkg \
       "${_pkg}" \
       "${_mode}" \
-      "${_server}"
+      "${_origin}" \
+      "${_repo}" \
+      "${_server}" \
+      "${_work_dir}"
   done
   cd \
-    ..
-  rm \
-    -rf \
-      repo
+    "${_oldpwd}"
+}
+
+_nobuild() {
+  cd \
+    "${_repo_dir}"
+  for _pkg \
+    in "${_packages[@]}"; do
+    _msg_info \
+      "no build selected, looking for ${_pkg}"
+    _pkgs=( $( \
+      find \
+        . \
+        -iname \
+          "${_pkg}*.pkg.*" \
+        -exec \
+	  echo \
+	    ${_repo_dir}/{} ';')
+    )
+    if [[ "${_pkgs[*]}" != "" ]]; then
+      _msg_info \
+        "No build preferred: found packages ${_pkgs[*]}"
+      _msg_info \
+        "copying packages to ${_output_dir}"
+      rsync \
+        "${_pkgs[@]}" \
+        "${_output_dir}"
+    elif [[ "${_pkgs[*]}" == "" ]]; then
+      _msg_info \
+        "not found ${_pkg} packages in lur repo '${_repo_dir}'"
+      _msg_info \
+        "packaging ${_pkg}"
+      _aspe_opts=(
+        -p
+          "${_origin}"
+      )
+      _repo="$( \
+        mktemp \
+          -d)"
+      _opts=(
+        "${_aspe_opts[@]}"
+      )
+      cd \
+        "${_repo}"
+      aspe \
+        "${_opts[@]}" \
+        "${_pkg}"
+      _pkgs=(
+        $(find \
+            . \
+            -iname \
+              '*.pkg.*' \
+            -exec \
+              echo \
+      	  ${_repo}/{} ';')
+      )
+      if [[ "${_pkgs[*]}" != "" ]]; then
+        _msg_info \
+          "found packages ${_pkgs[*]}"
+      elif [[ "${_pkgs[*]}" == "" ]]; then
+        _msg=(
+          "Package ${_pkg}: error running"
+          "reallymakepkg probably."
+        )
+        _msg_error \
+          "${_msg[*]}" \
+          1
+      fi
+      _sigs=(
+        $( \
+          find \
+            . \
+            -iname \
+              '*.sig' \
+            -exec echo ${_repo}/{} ';')
+      )
+      _msg_info \
+        "removing signatures ${_sigs[*]}"
+      mv \
+        "${_sigs[@]}" \
+        .
+      rm \
+        *".sig"
+      _pkgs=(
+        $( \
+          find \
+            . | \
+            grep \
+              "pkg")
+      )
+      _msg_info \
+        "moving ${_pkgs[*]}"
+      mv \
+        "${_pkgs[@]}" \
+        .
+      _pkgs=(
+        $(ls \
+            *".pkg."*)
+      )
+      _msg_info \
+        "installing ${_pkgs[*]}"
+      pacman \
+        "${_pacman_opts[@]}" \
+        "${_pkgs[@]}"
+    fi
+  done
+  cd \
+    "${OLDPWD}"
 }
 
 # $@: packages
@@ -162,6 +341,8 @@ _lur() {
     _repo_dir="${2}" \
     _origin="${3}" \
     _no_build="${4}" \
+    _build_mode="${5}" \
+    _work_dir="${6}" \
     _packages=() \
     _pkgs=() \
     _pacman_opts=() \
@@ -170,115 +351,21 @@ _lur() {
     _msg=() \
     _pkg
   shift \
-    4
+    6
   _packages=(
     "$@"
   )
   if [[ "${_no_build}" == "true" ]]; then
-    cd \
-      "${_repo_dir}"
-    for _pkg \
-      in "${_packages[@]}"; do
-      _msg_info \
-        "no build selected, looking for ${_pkg}"
-      _pkgs=(
-        $( \
-          find \
-            . \
-            -iname \
-              "${_pkg}*.pkg.*" \
-            -exec echo ${_repo_dir}/{} ';')
-      )
-      if [[ "${_pkgs[*]}" != "" ]]; then
-        _msg_info \
-          "No build preferred: found packages ${_pkgs[*]}"
-        _msg_info \
-          "copying packages to ${_output_dir}"
-        rsync \
-          "${_pkgs[@]}" \
-          "${_output_dir}"
-      elif [[ "${_pkgs[*]}" == "" ]]; then
-        _msg_info \
-          "not found ${_pkg} packages in lur repo '${_repo_dir}'"
-        _msg_info \
-          "packaging ${_pkg}"
-        _aspe_opts=(
-          -p
-            "${_origin}"
-        )
-        _repo="$( \
-          mktemp \
-            -d)"
-        _opts=(
-          "${_aspe_opts[@]}"
-        )
-        cd \
-          "${_repo}"
-        aspe \
-          "${_opts[@]}" \
-          "${_pkg}"
-        _pkgs=(
-          $(find \
-              . \
-              -iname \
-                '*.pkg.*' \
-              -exec \
-	        echo \
-		  ${_repo}/{} ';')
-        )
-        if [[ "${_pkgs[*]}" != "" ]]; then
-          _msg_info \
-            "found packages ${_pkgs[*]}"
-        elif [[ "${_pkgs[*]}" == "" ]]; then
-	  _msg=(
-            "Package ${_pkg}: error running"
-	    "reallymakepkg probably."
-          )
-          _msg_error \
-            "${_msg[*]}" \
-	    1
-        fi
-        _sigs=(
-          $( \
-            find \
-              . \
-              -iname \
-                '*.sig' \
-              -exec echo ${_repo}/{} ';')
-        )
-        _msg_info \
-          "removing signatures ${_sigs[*]}"
-        mv \
-          "${_sigs[@]}" \
-          .
-        rm \
-          *".sig"
-        _pkgs=(
-          $( \
-            find \
-              . | \
-              grep \
-                "pkg")
-        )
-        _msg_info \
-          "moving ${_pkgs[*]}"
-        mv \
-          "${_pkgs[@]}" \
-          .
-        _pkgs=(
-          $(ls \
-              *".pkg."*)
-        )
-        _msg_info \
-          "installing ${_pkgs[*]}"
-        pacman \
-          "${_pacman_opts[@]}" \
-          "${_pkgs[@]}"
-      fi
-    done
+    _nobuild
+  elif [[ "${_no_build}" == "false" ]]; then
+    _build_repo \
+      "${_build_mode}" \
+      "${_repo_dir}" \
+      "${_origin}" \
+      "${_output_dir}" \
+      "${_work_dir}" \
+      "${_packages[@]}"
   fi
-  cd \
-    "${OLDPWD}"
 }
 
 # Set defaults and, if present, overrides
@@ -292,6 +379,13 @@ _set_overrides() {
     "repo" \
     "dir" \
     "${HOME}/lur"
+  _set_override \
+    "work" \
+    "dir" \
+    "${HOME}/.cache/lur/build-$( \
+      _get \
+        "packaging" \
+	"date")"
   _set_override \
     "repo" \
     "origin" \
@@ -320,6 +414,7 @@ if [[ -v override_color ]]; then
 # $1: exit status number.
 _usage() {
   local \
+    _exit="${1}" \
     _usage_text
   IFS='' \
     read \
@@ -335,6 +430,8 @@ Usage:
   options:
      -d <repo_dir>        Repo directory.
 			  Default: $(_get "repo" "dir")
+     -b <build_mode>      Values are 'src' or 'fakepkg'
+			  Default: $(_get "build" "mode")
      -p <origin>          Repo origin.
 			  Default: $(_get "repo" "origin")
      -o <output_dir>      Output directory.
@@ -349,7 +446,7 @@ ENDUSAGETEXT
     '%s\n' \
     "${_usage_text}"
   exit \
-    "${1}"
+    "${_exit}"
 }
 
 # Shows configuration options.
@@ -358,7 +455,9 @@ _show_config() {
   _msg_info "           Packaging date:   $(_get "packaging" "date")"
   _msg_info "              Repo origin:   $(_get "repo" "origin")"
   _msg_info "           Repo directory:   $(_get "repo" "dir")"
+  _msg_info "           Work directory:   $(_get "work" "dir")"
   _msg_info "                 No build:   $(_get "no" "build")"
+  _msg_info "               Build mode:   $(_get "build" "mode")"
   _msg_info "                 Packages:   $(_get "local" "packages")"
   _msg_info "         Output directory:   $(_get "output" "dir")"
 }
@@ -370,13 +469,15 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    'd:p:o:ncvh?' \
+    'd:b:p:o:w:ncvh?' \
     arg; do
   case \
     "${arg}" in
     d) override_repo_dir="${OPTARG}" ;;
+    b) override_build_mode="${OPTARG}" ;;
     p) override_repo_origin="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
+    w) override_work_dir="${OPTARG}" ;;
     n) override_no_build="true" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
@@ -404,7 +505,9 @@ local_packages=(
   $@
 )
 _config_user_init \
-  "lur"
+  "$(_get \
+    "app" \
+    "name")"
 _set_overrides
 _show_config
 app_opts=(
@@ -412,6 +515,8 @@ app_opts=(
   "${repo_dir}"
   "${repo_origin}"
   "${no_build}"
+  "${build_mode}"
+  "${work_dir}"
   "${local_packages[@]}"
 )
 _lur \
