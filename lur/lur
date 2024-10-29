@@ -120,7 +120,9 @@ _makepkg() {
       "${validpgpkeys[@]}"
   done
   reallymakepkg \
-    "${_reallymakepkg_opts[@]}"
+    "${_reallymakepkg_opts[@]}" -- \
+    -df \
+    --nocheck
   _msg_info \
     "current directory: $(pwd)"
   ls \
