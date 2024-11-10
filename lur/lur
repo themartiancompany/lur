@@ -343,11 +343,19 @@ _lur() {
 # from arch-grub command line option parameters
 _set_overrides() {
   local \
-    _msg=()
+    _msg=() \
+    _date
   _set_override \
     "packaging" \
     "date" \
     "$(_get_date_human)"
+  _date="$( \
+    echo \
+      "$(_get \
+        "packaging" \
+	"date")" | \
+      sed \
+        "s/://g")"
   _set_override \
     "repo" \
     "dir" \
@@ -355,10 +363,7 @@ _set_overrides() {
   _set_override \
     "work" \
     "dir" \
-    "${HOME}/.cache/lur/build-$( \
-      _get \
-        "packaging" \
-	"date")"
+    "${HOME}/.cache/lur/build-${_date}"
   _set_override \
     "repo" \
     "origin" \
