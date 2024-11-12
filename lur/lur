@@ -80,7 +80,7 @@ _makepkg() {
   if [[ "${_work_dir}" != "" ]]; then
     _reallymakepkg_opts+=(
       -w
-        "${_work_dir}"
+        "${work_dir}"
     )
   fi
   if [[ ! -d "${_repo}" ]]; then
