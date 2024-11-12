@@ -133,9 +133,9 @@ _makepkg() {
   )
   _msg_info \
     "clean work dir ${_work_dir}"
-  rm \
-    -rf \
-    "${_work_dir}"
+  # rm \
+  #   -rf \
+  #   "${_work_dir}"
   _msg_info \
     "moving packages '${_pkg_files[*]}' to '${_server}'"
   mv \
