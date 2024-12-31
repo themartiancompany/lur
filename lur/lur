@@ -265,28 +265,117 @@ _build_repo() {
     "${_oldpwd}"
 }
 
+_pkgs_find() {
+  local \
+    _dir="${1}" \
+    _pkgver="${2}" \
+    _pkgname=() \
+    _find_opts=() \
+    _pkg \
+    _pkgname_length
+  shift \
+    2
+  _pkgname=(
+    "$@"
+  )
+  _msg=(
+    "looking for packages '${_pkgname[*]}'"
+    "with version '${_pkgver}' in '${_dir}'."
+  )
+  _msg_info \
+    "${_msg[*]}"
+  _pkgname_length="${#_pkgname[@]}"
+  for _pkg in "${_pkgname[@]::${_pkgname_length}-1}"; do
+    _find_opts+=(
+      -iwholename
+        "${_pkg}-${_pkgver}-*.pkg.*"
+      -o
+    )
+  done
+  _find_opts+=(
+    -iwholename
+      "${_pkgname[-1]}-${_pkgver}-*.pkg.*"
+    -type
+      "f"
+    -exec
+      "echo"
+        "${_repo}/{}" ';'
+    -print0
+  )
+  mapfile \
+    -d \
+    $'\0' \
+    _pkgs < \
+    <(find \
+        . \
+	"${_find_opts[@]}" || \
+      true)
+}
+
 _nobuild() {
+  local \
+    _pkgbase \
+    _pkgname=() \
+    _pkgver \
+    _msg=() \
+    _pkgbuild \
+    _pkgs=() \
+    _oldpwd \
+    _search_dir
+  _oldpwd="$( \
+    realpath \
+      "$(pwd)")"
+  _msg=(
+    "entering repo '${_repo_dir}'"
+  )
   cd \
     "${_repo_dir}"
-  for _pkg \
-    in "${_packages[@]}"; do
-    _msg_info \
-      "no build selected, looking for ${_pkg}"
-    _msg_info \
-      "current directory $(pwd)"
-    _pkgs=( $( \
-      find \
-        "$(pwd)" \
-        -iname \
-          "${_pkg}*.pkg.*" \
-        -exec \
-	  echo \
-	    '{}' ';' || \
-        true)
+  for _pkgbase in "${_packages[@]}"; do
+    _pkgbuild="${_pkgbase}/PKGBUILD"
+    _msg=(
+      "option 'no build' selected,"
+      "reading packages built for"
+      "'${_pkgbase}' in PKGBUILD"
+      "'${_pkgbuild}'."
     )
+    _msg_info \
+      "${_msg[*]}"
+    if [[ ! -e "${_pkgbuild}" ]]; then
+      _msg=(
+        "PKGBUILD '${_pkgbuild}'"
+	"does not exist."
+      )
+      _msg_error \
+        "${_msg[*]}" \
+	1
+    fi
+    _pkgname=( $( \
+      recipe-get \
+        "${_pkgbuild}" \
+        "pkgname")
+    )
+    _pkgver="$( \
+      recipe-get \
+        "${_pkgbuild}" \
+        "pkgver")"
+    if [[ "${_pkgname[*]}" == "" ]]; then
+      _msg=(
+        "no packages declared in '${_pkgbuild}'."
+      )
+      _msg_error \
+        "${_msg[*]}" \
+	1
+    fi
+    _search_dir="$( \
+      realpath \
+        "${_repo_dir}")"
+    _pkgs_find \
+      "${_search_dir}" \
+      "${_pkgver}" \
+      "${_pkgname[@]}"
     if [[ "${_pkgs[*]}" != "" ]]; then
       _msg_info \
-        "No build preferred: found packages ${_pkgs[*]}"
+        "option 'no build' selected: found packages '${_pkgs[*]}'"
       _msg_info \
         "copying packages to ${_output_dir}"
       rsync \
@@ -306,8 +395,11 @@ _nobuild() {
         "${_pkg}"
     fi
   done
+  _msg=(
+    "returning to '${_oldpwd}'"
+  )
   cd \
-    "${OLDPWD}"
+    "${_oldpwd}"
 }
 
 # $@: packages
