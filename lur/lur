@@ -284,31 +284,38 @@ _pkgs_find() {
   )
   _msg_info \
     "${_msg[*]}"
+  _find_opts+=(
+    -type
+      "f"
+    \(
+  )
   _pkgname_length="${#_pkgname[@]}"
   for _pkg in "${_pkgname[@]::${_pkgname_length}-1}"; do
     _find_opts+=(
-      -iwholename
+      -iname
         "${_pkg}-${_pkgver}-*.pkg.*"
       -o
     )
   done
   _find_opts+=(
-    -iwholename
+    -iname
       "${_pkgname[-1]}-${_pkgver}-*.pkg.*"
-    -type
-      "f"
-    -exec
-      "echo"
-        "${_repo}/{}" ';'
+    \)
     -print0
   )
+  _msg=(
+    "running find with options"
+    "'${_find_opts[@]}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
   mapfile \
     -d \
     $'\0' \
     _pkgs < \
     <(find \
-        . \
-	"${_find_opts[@]}" || \
+        "${_dir}" \
+	"${_find_opts[@]}" 2>/dev/null || \
       true)
 }
 
