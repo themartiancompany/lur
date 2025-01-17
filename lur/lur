@@ -27,7 +27,8 @@ _global_variables() {
   packaging_date=""
   local_packages=()
   repo_dir=""
-  repo_origin=""
+  source_origin=""
+  source_publisher=""
   no_build=""
   build_mode=""
   work_dir=""
@@ -40,7 +41,8 @@ _source_retrieve() {
   local \
     _pkgname="${1}" \
     _source="${2}" \
-    _repo="${3}" \
+    _publisher="${3}" \
+    _repo="${4}" \
     _aspe_opts=()
   if [[ "${quiet}" == "n" ]]; then
     _aspe_opts+=(
@@ -48,7 +50,7 @@ _source_retrieve() {
     )
   fi
   _aspe_opts+=(
-    -p
+    -S
       "${_source}"
     -o
       "${_repo}"
@@ -63,7 +65,8 @@ _makepkg() {
     _pkgname="${1}" \
     _repo="${2}" \
     _source="${3}" \
-    _work_dir="${4}" \
+    _publisher="${4}" \
+    _work_dir="${5}" \
     _reallymakepkg_opts=() \
     _key \
     _gpg_keys \
@@ -148,9 +151,10 @@ _build_pkg() {
     _pkgname="${1}" \
     _mode="${2}"  \
     _origin="${3}" \
-    _repo="${4}" \
-    _server="${5}" \
-    _work_dir="${6}" \
+    _publisher="${4}" \
+    _repo="${5}" \
+    _server="${6}" \
+    _work_dir="${7}" \
     _pwd
   _oldpwd="$( \
     pwd)"
@@ -161,7 +165,7 @@ _build_pkg() {
       "${_pkgname}" \
       "${_repo}" \
       "${_origin}" \
-      "${_server}" \
+      "${_publisher}" \
       "${_work_dir}/${_pkgname}"
   elif [ "${_mode}" = "fakepkg" ]; then
     cd \
@@ -315,7 +319,7 @@ _pkgs_find() {
     _pkgs < \
     <(find \
         "${_dir}" \
-	"${_find_opts[@]}" 2>/dev/null || \
+        "${_find_opts[@]}" 2>/dev/null || \
       true)
 }
 
@@ -469,7 +473,7 @@ _set_overrides() {
     "dir" \
     "${HOME}/.cache/lur/build-${_date}"
   _set_override \
-    "repo" \
+    "source" \
     "origin" \
     "ur"
   _set_override \
@@ -531,7 +535,7 @@ Usage:
 			  Default: $(_get "repo" "dir")
      -b <build_mode>      Values are 'src' or 'fakepkg'
 			  Default: $(_get "build" "mode")
-     -p <origin>          Repo origin.
+     -S <origin>          Repo origin.
 			  Default: $(_get "repo" "origin")
      -o <output_dir>      Output directory.
 			  Default: $(_get "output" "dir")
@@ -552,7 +556,7 @@ ENDUSAGETEXT
 _show_config() {
   _msg_info "${app_name} configuration"
   _msg_info "           Packaging date:   $(_get "packaging" "date")"
-  _msg_info "              Repo origin:   $(_get "repo" "origin")"
+  _msg_info "            Source origin:   $(_get "source" "origin")"
   _msg_info "           Repo directory:   $(_get "repo" "dir")"
   _msg_info "           Work directory:   $(_get "work" "dir")"
   _msg_info "                 No build:   $(_get "no" "build")"
@@ -568,13 +572,13 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    'd:b:p:o:w:ncvh?' \
+    'd:b:S:o:w:ncvh?' \
     arg; do
   case \
     "${arg}" in
     d) override_repo_dir="${OPTARG}" ;;
     b) override_build_mode="${OPTARG}" ;;
-    p) override_repo_origin="${OPTARG}" ;;
+    S) override_source_origin="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
     w) override_work_dir="${OPTARG}" ;;
     n) override_no_build="true" ;;
@@ -609,7 +613,7 @@ _show_config
 app_opts=(
   "${output_dir}"
   "${repo_dir}"
-  "${repo_origin}"
+  "${source_origin}"
   "${no_build}"
   "${build_mode}"
   "${work_dir}"
