@@ -17,7 +17,7 @@ source \
 # are available
 _requirements() {
   _check_cmd \
-    'git'
+    'aspe'
   _check_cmd \
     'rsync'
 }
@@ -29,6 +29,7 @@ _global_variables() {
   repo_dir=""
   source_origin=""
   source_publisher=""
+  target_revision=""
   no_build=""
   build_mode=""
   work_dir=""
@@ -42,7 +43,8 @@ _source_retrieve() {
     _pkgname="${1}" \
     _source="${2}" \
     _publisher="${3}" \
-    _repo="${4}" \
+    _revision="${4}" \
+    _repo="${5}" \
     _aspe_opts=()
   if [[ "${quiet}" == "n" ]]; then
     _aspe_opts+=(
@@ -52,8 +54,12 @@ _source_retrieve() {
   _aspe_opts+=(
     -S
       "${_source}"
+    -P
+      "${_publisher}"
     -o
       "${_repo}"
+    -r
+      "${_revision}"
   )
   aspe \
     "${_aspe_opts[@]}" \
@@ -66,7 +72,8 @@ _makepkg() {
     _repo="${2}" \
     _source="${3}" \
     _publisher="${4}" \
-    _work_dir="${5}" \
+    _revision="${5}" \
+    _work_dir="${6}" \
     _reallymakepkg_opts=() \
     _key \
     _gpg_keys \
@@ -99,6 +106,8 @@ _makepkg() {
     _source_retrieve \
       "${_pkgname}" \
       "${_source}" \
+      "${_publisher}" \
+      "${_revision}" \
       "${_repo}"
   elif [[ ! -e "${_repo}/${_pkgname}/PKGBUILD" ]]; then
     _msg=(
@@ -152,9 +161,10 @@ _build_pkg() {
     _mode="${2}"  \
     _origin="${3}" \
     _publisher="${4}" \
-    _repo="${5}" \
-    _server="${6}" \
-    _work_dir="${7}" \
+    _revision="${5}" \
+    _repo="${6}" \
+    _server="${7}" \
+    _work_dir="${8}" \
     _pwd
   _oldpwd="$( \
     pwd)"
@@ -166,6 +176,7 @@ _build_pkg() {
       "${_repo}" \
       "${_origin}" \
       "${_publisher}" \
+      "${_revision}" \
       "${_work_dir}/${_pkgname}"
   elif [ "${_mode}" = "fakepkg" ]; then
     cd \
@@ -221,14 +232,16 @@ _build_repo() {
     _mode="${1}" \
     _repo="${2}" \
     _origin="${3}" \
-    _server="${4}" \
-    _work_dir="${5}" \
+    _publisher="${4}" \
+    _revision="${5}" \
+    _server="${6}" \
+    _work_dir="${7}" \
     _packages=() \
     _work_dir \
     _oldpwd \
     _pkg
   shift \
-    5
+    7
   _packages=(
     "$@"
   )
@@ -261,6 +274,8 @@ _build_repo() {
       "${_pkg}" \
       "${_mode}" \
       "${_origin}" \
+      "${_publisher}" \
+      "${_revision}" \
       "${_repo}" \
       "${_server}" \
       "${_work_dir}"
@@ -419,9 +434,11 @@ _lur() {
     _output_dir="${1}" \
     _repo_dir="${2}" \
     _origin="${3}" \
-    _no_build="${4}" \
-    _build_mode="${5}" \
-    _work_dir="${6}" \
+    _publisher="${4}" \
+    _revision="${5}" \
+    _no_build="${6}" \
+    _build_mode="${7}" \
+    _work_dir="${8}" \
     _packages=() \
     _pkgs=() \
     _pacman_opts=() \
@@ -430,7 +447,7 @@ _lur() {
     _msg=() \
     _pkg
   shift \
-    6
+    8
   _packages=(
     "$@"
   )
@@ -441,6 +458,8 @@ _lur() {
       "${_build_mode}" \
       "${_repo_dir}" \
       "${_origin}" \
+      "${_publisher}" \
+      "${_revision}" \
       "${_output_dir}" \
       "${_work_dir}" \
       "${_packages[@]}"
@@ -453,6 +472,16 @@ _set_overrides() {
   local \
     _msg=() \
     _date
+  if [[ -v override_color ]]; then
+    color="${override_color}"
+  elif [[ -z "${color}" ]]; then
+    color="n"
+  fi
+  if [[ -v override_quiet ]]; then
+    quiet="${override_quiet}"
+  elif [[ -z "${quiet}" ]]; then
+    quiet="y"
+  fi
   _set_override \
     "packaging" \
     "date" \
@@ -477,6 +506,14 @@ _set_overrides() {
     "origin" \
     "ur"
   _set_override \
+    "source" \
+    "publisher" \
+    ""
+  _set_override \
+    "target" \
+    "revision" \
+    "latest"
+  _set_override \
     "no" \
     "build" \
     "false"
@@ -488,16 +525,6 @@ _set_overrides() {
     "output" \
     "dir" \
     "$(pwd)"
-if [[ -v override_color ]]; then
-    color="${override_color}"
-  elif [[ -z "${color}" ]]; then
-    color="n"
-  fi
-  if [[ -v override_quiet ]]; then
-    quiet="${override_quiet}"
-  elif [[ -z "${quiet}" ]]; then
-    quiet="y"
-  fi
   if [[ "${local_packages[*]}" == "" ]]; then
     local_packages+=(
       "$(basename \
@@ -506,7 +533,9 @@ if [[ -v override_color ]]; then
     )
     _msg=(
       "No input package given,"
-      "publishing ${local_packages[*]}"
+      "treating current directory"
+      "'${local_packages[*]}' as a"
+      "package."
     )
     _msg_info \
       "${_msg[*]}"
@@ -536,11 +565,16 @@ Usage:
      -b <build_mode>      Values are 'src' or 'fakepkg'
 			  Default: $(_get "build" "mode")
      -S <origin>          Repo origin.
-			  Default: $(_get "repo" "origin")
+			  Default: $(_get "source" "origin")
+     -P <publisher>       Repo publisher.
+			  Default: $(_get "source" "publisher")
+     -r <revision>        Target revision.
+			  Default: ${target_revision}
      -o <output_dir>      Output directory.
 			  Default: $(_get "output" "dir")
      -n                   No build.
 			  Default: $(_get "no" "build")
+
      -c                   Colors.
      -h                   This message.
      -v                   Enable verbose output
@@ -557,12 +591,14 @@ _show_config() {
   _msg_info "${app_name} configuration"
   _msg_info "           Packaging date:   $(_get "packaging" "date")"
   _msg_info "            Source origin:   $(_get "source" "origin")"
+  _msg_info "         Source publisher:   $(_get "source" "publisher")"
+  _msg_info "          Target revision:   ${target_revision}"
   _msg_info "           Repo directory:   $(_get "repo" "dir")"
   _msg_info "           Work directory:   $(_get "work" "dir")"
   _msg_info "                 No build:   $(_get "no" "build")"
   _msg_info "               Build mode:   $(_get "build" "mode")"
   _msg_info "         Output directory:   $(_get "output" "dir")"
-  _msg_info "                 Packages:   ${local_packages}"
+  _msg_info "                 Packages:   ${local_packages[*]}"
 }
 
 _globals
@@ -572,13 +608,15 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    'd:b:S:o:w:ncvh?' \
+    'd:b:S:P:r:o:w:ncvh?' \
     arg; do
   case \
     "${arg}" in
     d) override_repo_dir="${OPTARG}" ;;
     b) override_build_mode="${OPTARG}" ;;
     S) override_source_origin="${OPTARG}" ;;
+    P) override_source_publisher="${OPTARG}" ;;
+    r) override_target_revision="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
     w) override_work_dir="${OPTARG}" ;;
     n) override_no_build="true" ;;
@@ -605,15 +643,15 @@ local_packages+=(
   $@
 )
 _config_user_init \
-  "$(_get \
-    "app" \
-    "name")"
+  "${app_name}"
 _set_overrides
 _show_config
 app_opts=(
   "${output_dir}"
   "${repo_dir}"
   "${source_origin}"
+  "${source_publisher}"
+  "${target_revision}"
   "${no_build}"
   "${build_mode}"
   "${work_dir}"
