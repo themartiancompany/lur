@@ -561,19 +561,21 @@ Usage:
     [packages]
   options:
      -d <repo_dir>        Repo directory.
-			  Default: $(_get "repo" "dir")
+                          Default: ${repo_dir}
      -b <build_mode>      Values are 'src' or 'fakepkg'
-			  Default: $(_get "build" "mode")
+                          Default: ${build_mode}
      -S <origin>          Repo origin.
-			  Default: $(_get "source" "origin")
+                          Default: ${source_origin}
      -P <publisher>       Repo publisher.
-			  Default: $(_get "source" "publisher")
+                          Default: ${source_publisher}
      -r <revision>        Target revision.
-			  Default: ${target_revision}
+                          Default: ${target_revision}
+     -w <work_dir>        Work directory.
+                          Default: ${work_dir}
      -o <output_dir>      Output directory.
-			  Default: $(_get "output" "dir")
+                          Default: ${output_dir}
      -n                   No build.
-			  Default: $(_get "no" "build")
+                          Default: ${no_build}
 
      -c                   Colors.
      -h                   This message.
