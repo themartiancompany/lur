@@ -168,7 +168,7 @@ _build_pkg() {
     _pwd
   _oldpwd="$( \
     pwd)"
-  echo \
+  _msg_info \
     "building ${_pkgname}"
   if [ "${_mode}" = "src" ]; then
     _makepkg \
@@ -595,7 +595,7 @@ _show_config() {
   _msg_info "            Source origin:   $(_get "source" "origin")"
   _msg_info "         Source publisher:   $(_get "source" "publisher")"
   _msg_info "          Target revision:   ${target_revision}"
-  _msg_info "           Repo directory:   $(_get "repo" "dir")"
+  _msg_info "           Repo directory:   ${repo_dir}"
   _msg_info "           Work directory:   $(_get "work" "dir")"
   _msg_info "                 No build:   $(_get "no" "build")"
   _msg_info "               Build mode:   $(_get "build" "mode")"
