@@ -32,6 +32,7 @@ _global_variables() {
   target_revision=""
   no_build=""
   build_mode=""
+  dependencies_check=""
   work_dir=""
   output_dir=""
   color=""
@@ -73,12 +74,14 @@ _makepkg() {
     _source="${3}" \
     _publisher="${4}" \
     _revision="${5}" \
-    _work_dir="${6}" \
+    _dependencies_check="${6}" \
+    _work_dir="${7}" \
     _reallymakepkg_opts=() \
     _key \
     _gpg_keys \
     _oldpwd \
-    _pkg_files=()
+    _pkg_files=() \
+    _current_directory_contents
     # _awk_pgpkeys_cmd='/validpgpkeys=/{flag=1;next}/\)/{flag=0}flag' \
   _oldpwd="$( \
     pwd)"
@@ -91,6 +94,11 @@ _makepkg() {
     _reallymakepkg_opts+=(
       -w
         "${work_dir}"
+    )
+  fi
+  if [[ "${_dependencies_check}" == "n" ]]; then
+    _reallymakepkg_opts+=(
+      -d
     )
   fi
   if [[ ! -d "${_repo}" ]]; then
@@ -137,8 +145,11 @@ _makepkg() {
     --nocheck
   _msg_info \
     "current directory: $(pwd)"
-  ls \
-    .
+  _current_directory_contents="$( \
+    ls \
+      .)"
+  _msg_info \
+    "${_current_directory_contents}"
   _pkg_files=( $( \
     ls \
       ./*".pkg.tar."*)
@@ -165,6 +176,7 @@ _build_pkg() {
     _repo="${6}" \
     _server="${7}" \
     _work_dir="${8}" \
+    _dependencies_check="${9}" \
     _pwd
   _oldpwd="$( \
     pwd)"
@@ -177,6 +189,7 @@ _build_pkg() {
       "${_origin}" \
       "${_publisher}" \
       "${_revision}" \
+      "${_dependencies_check}" \
       "${_work_dir}/${_pkgname}"
   elif [ "${_mode}" = "fakepkg" ]; then
     cd \
@@ -236,12 +249,13 @@ _build_repo() {
     _revision="${5}" \
     _server="${6}" \
     _work_dir="${7}" \
+    _dependencies_check="${8}" \
     _packages=() \
     _work_dir \
     _oldpwd \
     _pkg
   shift \
-    7
+    8
   _packages=(
     "$@"
   )
@@ -278,7 +292,8 @@ _build_repo() {
       "${_revision}" \
       "${_repo}" \
       "${_server}" \
-      "${_work_dir}"
+      "${_work_dir}" \
+      "${_dependencies_check}"
   done
   cd \
     "${_oldpwd}"
@@ -438,7 +453,8 @@ _lur() {
     _revision="${5}" \
     _no_build="${6}" \
     _build_mode="${7}" \
-    _work_dir="${8}" \
+    _dependencies_check="${8}" \
+    _work_dir="${9}" \
     _packages=() \
     _pkgs=() \
     _pacman_opts=() \
@@ -447,7 +463,7 @@ _lur() {
     _msg=() \
     _pkg
   shift \
-    8
+    9
   _packages=(
     "$@"
   )
@@ -462,6 +478,7 @@ _lur() {
       "${_revision}" \
       "${_output_dir}" \
       "${_work_dir}" \
+      "${_dependencies_check}" \
       "${_packages[@]}"
   fi
 }
@@ -513,6 +530,10 @@ _set_overrides() {
     "target" \
     "revision" \
     "latest"
+  _set_override \
+    "dependencies" \
+    "check" \
+    "y"
   _set_override \
     "no" \
     "build" \
@@ -576,6 +597,9 @@ Usage:
                           Default: ${output_dir}
      -n                   No build.
                           Default: ${no_build}
+     -D <y/n>             Whether to skip dependencies
+                          check.
+                          Default: ${dependencies_check}
 
      -c                   Colors.
      -h                   This message.
@@ -591,15 +615,16 @@ ENDUSAGETEXT
 # Shows configuration options.
 _show_config() {
   _msg_info "${app_name} configuration"
-  _msg_info "           Packaging date:   $(_get "packaging" "date")"
-  _msg_info "            Source origin:   $(_get "source" "origin")"
-  _msg_info "         Source publisher:   $(_get "source" "publisher")"
+  _msg_info "           Packaging date:   ${packaging_date}"
+  _msg_info "            Source origin:   ${source_origin}"
+  _msg_info "         Source publisher:   ${source_publisher}"
   _msg_info "          Target revision:   ${target_revision}"
   _msg_info "           Repo directory:   ${repo_dir}"
-  _msg_info "           Work directory:   $(_get "work" "dir")"
-  _msg_info "                 No build:   $(_get "no" "build")"
-  _msg_info "               Build mode:   $(_get "build" "mode")"
-  _msg_info "         Output directory:   $(_get "output" "dir")"
+  _msg_info "           Work directory:   ${work_dir}"
+  _msg_info "                 No build:   ${no_build}"
+  _msg_info "               Build mode:   ${build_mode}"
+  _msg_info "       Dependencies check:   ${dependencies_check}"
+  _msg_info "         Output directory:   ${output_dir}"
   _msg_info "                 Packages:   ${local_packages[*]}"
 }
 
@@ -610,7 +635,7 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    'd:b:S:P:r:o:w:ncvh?' \
+    'd:b:S:P:r:o:w:nD:cvh?' \
     arg; do
   case \
     "${arg}" in
@@ -622,6 +647,7 @@ while \
     o) override_output_dir="${OPTARG}" ;;
     w) override_work_dir="${OPTARG}" ;;
     n) override_no_build="true" ;;
+    D) override_dependencies_check="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
     h|?) _set_overrides && \
@@ -656,6 +682,7 @@ app_opts=(
   "${target_revision}"
   "${no_build}"
   "${build_mode}"
+  "${dependencies_check}"
   "${work_dir}"
   "${local_packages[@]}"
 )
