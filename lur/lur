@@ -77,6 +77,7 @@ _makepkg() {
     _dependencies_check="${6}" \
     _work_dir="${7}" \
     _reallymakepkg_opts=() \
+    _makepkg_opts=() \
     _key \
     _gpg_keys \
     _oldpwd \
@@ -97,7 +98,7 @@ _makepkg() {
     )
   fi
   if [[ "${_dependencies_check}" == "n" ]]; then
-    _reallymakepkg_opts+=(
+    _makepkg_opts+=(
       -d
     )
   fi
@@ -139,10 +140,13 @@ _makepkg() {
       --recv-keys \
       "${validpgpkeys[@]}"
   done
+  _makepkg_opts+=(
+    -f
+    --nocheck
+  )
   reallymakepkg \
     "${_reallymakepkg_opts[@]}" -- \
-    -df \
-    --nocheck
+    "${_makepkg_opts[@]}"
   _msg_info \
     "current directory: $(pwd)"
   _current_directory_contents="$( \
