@@ -21,6 +21,9 @@ _requirements() {
   _check_cmd \
     'fakepkg'
   _check_cmd \
+    'find' \
+    'findutils'
+  _check_cmd \
     'reallymakepkg'
   _check_cmd \
     'rsync'
