@@ -461,8 +461,6 @@ _lur() {
     _work_dir="${9}" \
     _packages=() \
     _pkgs=() \
-    _pacman_opts=() \
-    _aspe_opts=() \
     _opts=() \
     _msg=() \
     _pkg
