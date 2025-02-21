@@ -38,6 +38,13 @@ _requirements() {
   _check_cmd \
     'aspe'
   _check_cmd \
+    'fakepkg'
+  _check_cmd \
+    'find' \
+    'findutils'
+  _check_cmd \
+    'reallymakepkg'
+  _check_cmd \
     'rsync'
 }
 
@@ -175,7 +182,7 @@ _makepkg() {
     "${_current_directory_contents}"
   _pkg_files=( $( \
     ls \
-      ./*".pkg.tar."*)
+      './'*".pkg.tar."*)
   )
   _msg_info \
     "clean work dir ${_work_dir}"
@@ -480,8 +487,6 @@ _lur() {
     _work_dir="${9}" \
     _packages=() \
     _pkgs=() \
-    _pacman_opts=() \
-    _aspe_opts=() \
     _opts=() \
     _msg=() \
     _pkg
