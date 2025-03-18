@@ -605,9 +605,10 @@ _usage() {
         ENDUSAGETEXT || true
 
 Usage:
-  $(_get "app" "name")
+  ${app_name}
     [options]
     [packages]
+
   options:
      -d <repo_dir>        Repo directory.
                           Default: ${repo_dir}
