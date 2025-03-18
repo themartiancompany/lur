@@ -99,8 +99,9 @@ A censorable binary package has been published on the
 [Fallback User Repository](
   https://github.com/themartiancompany/fur)
 and it can be installed with
+
 ```bash
-ur \
+fur \
   lur
 ```
 
