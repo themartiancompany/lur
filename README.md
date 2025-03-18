@@ -28,18 +28,6 @@ the
 uncensorable, undeletable, Life and DogeOS user repository
 and app store.
 
-### Usage
-
-To build a manually downloaded Ur package
-or to automatically retrieve one,
-run from the directory containing an universal recipe
-user repo:
-
-```bash
-lur \
-  <ur_package_name>
-```
-
 The Lur depends on
 [aspe](
   https://github.com/themartiancompany)
@@ -53,6 +41,18 @@ The Lur is written using the
 [Crash Bash](
   https://github.com/themartiancompany/crash-bash)
 library.
+
+### Usage
+
+To build a manually downloaded Ur package
+or to automatically retrieve one,
+run from the directory containing an universal recipe
+user repo:
+
+```bash
+lur \
+  <ur_package_name>
+```
 
 ## Installation
 
