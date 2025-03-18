@@ -24,7 +24,9 @@
 The Lur is the local user repository manager of
 the
 [Ur](
-  https://github.com/themartiancompany/lur).
+  https://github.com/themartiancompany/lur)
+uncensorable, undeletable, Life and DogeOS user repository
+and app store.
 
 ### Usage
 
