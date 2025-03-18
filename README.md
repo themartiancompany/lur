@@ -19,7 +19,7 @@
 [comment]: <> (License along with this program.)
 [comment]: <> (If not, see <https://www.gnu.org/licenses/>.)
 
-# Lur - Local User Repository
+# Local User Repository
 
 The Lur is the local user repository manager of
 the
