@@ -343,7 +343,7 @@ _pkgs_find() {
     "$@"
   )
   _msg=(
-    "looking for packages '${_pkgname[*]}'"
+    "Looking for packages '${_pkgname[*]}'"
     "with version '${_pkgver}' in '${_dir}'."
   )
   _msg_info \
