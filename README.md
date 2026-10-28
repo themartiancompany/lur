@@ -21,6 +21,15 @@
 
 # Local User Repository
 
+<div
+   align="center">
+  <img
+     src="https://raw.githubusercontent.com/themartiancompany/lur-data/9cae32a9f11bcaa0dc02d7c7c0ac6416efdfa214/lurbase.png"
+     width="500"
+     align="center"
+  />
+</div>
+
 The Lur is the local user repository manager of
 the
 [Ur](
