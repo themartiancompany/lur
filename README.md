@@ -51,6 +51,10 @@ The Lur is written using the
   https://github.com/themartiancompany/crash-bash)
 library.
 
+Being an Ur dependency the Lur is a core component of
+[DogeOS](
+  https://github.com/themartiancompany/dogeos).
+
 ### Usage
 
 To build a manually downloaded Ur package
@@ -60,27 +64,31 @@ user repo:
 
 ```bash
 lur \
-  <ur_package_name>
+  <ur-package-name>
 ```
 
 ## Installation
 
 The program in this source repo
-can be installed from source using GNU Make.
+can be installed from source using GNU Make,
 
 ```bash
 make \
   install
 ```
 
-or even run directly
+or it can run it directly
 
 ```bash
 bash \
   lur/lur
 ```
 
-The lur has officially published on the
+provided dependency are installed.
+Dependency check is performed
+at runtime.
+
+The Lur has been officially published on the
 the uncensorable
 [Ur](
   https://github.com/themartiancompany/ur)
