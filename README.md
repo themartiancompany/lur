@@ -24,7 +24,7 @@
 <div
    align="center">
   <img
-     src="https://raw.githubusercontent.com/themartiancompany/lur-data/9cae32a9f11bcaa0dc02d7c7c0ac6416efdfa214/lurbase.png"
+     src="https://raw.githubusercontent.com/themartiancompany/lur-data/9cae32a9f11bcaa0dc02d7c7c0ac6416efdfa214/lurbased.png"
      width="500"
      align="center"
   />
